@@ -1,6 +1,6 @@
 # AI Assistant Booking
 
-A full-stack appointment scheduler with protected user accounts, an AI-assisted intake chat, a deterministic manual booking flow, and PostgreSQL-backed bookings. This repository was created from an empty workspace. No official assessment brief, plan, images, or diagrams were present, so the service catalog, API response shape, visual styling, hours, and model default below are provisional—not claims about missing source materials.
+A full-stack appointment scheduler with protected user accounts, an AI-assisted intake chat, a deterministic manual booking flow, and PostgreSQL-backed bookings. The attached `Assessment_Execution_Plan.docx` was later located in Downloads and inspected, including its tables and six embedded diagrams/mockups. The separate official assessment brief has not been located. The current code began before the plan was found and is only a partial implementation; plan-specific differences are recorded in `docs/decisions.md`.
 
 ## Architecture
 
@@ -13,9 +13,9 @@ The API response convention is `{ "data": ... }` for successful operations and `
 
 ## Provisional assumptions and decisions
 
-- Services seeded: Consultation (30 minutes), Follow-up (20 minutes), Extended session (60 minutes). Replace these with the official service list when supplied.
-- Hours: Monday through Friday, 09:00–17:00 UTC, 30-minute start increments. Times are intentionally UTC to avoid silently interpreting a browser-local zone; replace with the specified clinic time zone and hours when known.
-- AI model is configurable via `MISTRAL_MODEL`, defaulting to `mistral-medium-3.5`; this is a current model identifier documented by Mistral at implementation time. The absent assessment plan means the plan's preferred model could not be checked. Set the model ID to an account-enabled model if necessary.
+- Services seeded: Consultation (30 minutes), Follow-up (20 minutes), Extended session (60 minutes). These are sample values; the plan's examples include Consultation, Check-up, and Follow-up.
+- Hours: Monday through Friday, 09:00–17:00 UTC, with half-hour starts. The plan calls for a configured IANA business time zone stored on a business record. UTC is a temporary simplification, not full compliance with that requirement.
+- AI model is configurable via `MISTRAL_MODEL`, defaulting to `mistral-medium-3.5`. The plan specifies `mistral-small-latest`; the default here is a provisional provider-documented alternative and has not been tested with an account key. Change it after confirming the account-enabled model ID.
 - The API uses the official `@mistralai/mistralai` TypeScript SDK and chat completions. No key means a deterministic mock assistant is used for development. Provider or output-validation errors return a manual-booking fallback.
 - Appointment statuses are `confirmed` and `cancelled`; cancellation updates the record, preserving audit history.
 
@@ -78,8 +78,8 @@ No hosting account, managed database credentials, Mistral key, or deployment con
 
 ## Known limitations
 
-The official assessment files and diagrams were not available. The UI and business rules are therefore provisional. There is no provider/staff resource, timezone localization, email verification, password reset, refresh-token/session revocation, appointment duration selection, or automated production migration tracking. AI responses are validated and never write bookings, but the UI sends the rolling conversation history from the browser, not persisted server-side. The assistant is not a source of availability; only the API's manual availability route is authoritative.
+The official assessment brief itself has not been located. The implementation also does not yet meet several explicit execution-plan goals: there is no `businesses` table or `business_id` scoping, business IANA time zone or daylight-saving handling, persisted chat sessions/messages, AI-call audit table/log rows, `/api/auth/me`, or plan-shaped chat-session endpoints/error codes. The AI chat gathers intent and displays a manual form, but does not yet complete a booking through the shared booking service. The current UI is a single-page blue layout rather than the plan's split-screen indigo auth and separate Chat/Appointments views. There is no provider/staff resource, email verification, password reset, refresh-token/session revocation, or automated production migration tracking. The browser keeps chat history only in memory and the JWT in local storage. PostgreSQL-backed end-to-end booking, concurrency tests, and deployment remain unverified.
 
 ## Interview-ready decisions
 
-Be prepared to explain the split between conversational intent extraction and deterministic booking commands; why a database exclusion constraint is required in addition to an application pre-check; why every appointment read/update is scoped to the authenticated user; why the browser may safely run without the Mistral key; and why hours, timezone, sample services, model ID, and single-resource assumptions must be reconciled against the missing brief before calling this assessment-compliant.
+Be prepared to explain the split between conversational intent extraction and deterministic booking commands; why a database exclusion constraint is required in addition to an application pre-check; and why every appointment read/update is scoped to the authenticated user. Before submission, reconcile the missing `business_id`/tenant design, plan timezone, chat persistence and AI logs, chat-driven booking, response contract, UI tokens, and chosen Mistral model against the plan and official brief.
