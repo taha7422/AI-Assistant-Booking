@@ -26,8 +26,8 @@ Requirements: Node.js 20.9+ (the installed machine reported Node v26.13.0), npm,
 1. Create a database named `ai_assistant_booking` and a PostgreSQL role with permissions to create the `pgcrypto` and `btree_gist` extensions (or have an administrator install them).
 2. Copy the root `.env.example` to root `.env` and set `DATABASE_URL` and a random `JWT_SECRET` of at least 32 characters. Keep `MISTRAL_API_KEY` empty for mock mode, or enter it directly in that local environment file; never paste it into chat or commit it. `MISTRAL_MODEL` is configurable.
 3. From the repository root, run `npm.cmd install`, then `npm.cmd run db:migrate` and `npm.cmd run db:seed`.
-4. Run `npm.cmd run dev`. The API is at `http://localhost:4000`; Next.js is at `http://localhost:3000`.
-5. Check `http://localhost:4000/health` after PostgreSQL access is configured.
+4. Run `npm.cmd run dev`. The API is at `http://127.0.0.1:4000`; Next.js is at `http://127.0.0.1:3000`.
+5. Check `http://127.0.0.1:4000/health` after PostgreSQL access is configured.
 
 The migration runner reads the root SQL files; the schema may also be applied directly with `psql -d ai_assistant_booking -f db/schema.sql` followed by `-f db/seed.sql`.
 
@@ -40,9 +40,9 @@ The migration runner reads the root SQL files; the schema may also be applied di
 | `JWT_SECRET` | JWT signing secret; use a unique random value of at least 32 characters |
 | `MISTRAL_API_KEY` | Optional server-only Mistral API key; omitted means mock mode |
 | `MISTRAL_MODEL` | Model identifier (default `mistral-medium-3.5`) |
-| `FRONTEND_ORIGIN` | Exact allowed web origin (default `http://localhost:3000`) |
+| `FRONTEND_ORIGIN` | Exact allowed web origin (default `http://127.0.0.1:3000`) |
 | `NODE_ENV` | `development`, `test`, or `production` |
-| `NEXT_PUBLIC_API_URL` | Optional frontend API base URL (default `http://localhost:4000/api`) |
+| `NEXT_PUBLIC_API_URL` | Optional frontend API base URL (default `http://127.0.0.1:4000/api`) |
 
 Do not expose DB credentials, JWT signing key, or the Mistral key to `NEXT_PUBLIC_*` values. Production deployment must reject development secrets and enforce HTTPS, restricted CORS, secrets-manager configuration, backups, and database connection controls.
 
