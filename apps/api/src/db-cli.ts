@@ -1,0 +1,2 @@
+import {readFile} from 'node:fs/promises';import {resolve} from 'node:path';import {pool} from './db.js';
+const action=process.argv[2];try{const files=action==='migrate'?['db/schema.sql']:action==='seed'?['db/seed.sql']:[];if(!files.length)throw new Error('Usage: db-cli migrate|seed');for(const file of files){const sql=await readFile(resolve(process.cwd(),file),'utf8');await pool.query(sql);console.log(`${action} completed: ${file}`);}}finally{await pool.end();}

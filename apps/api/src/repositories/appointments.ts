@@ -1,0 +1,8 @@
+import {query} from '../db.js';
+export type Service={id:string;name:string;duration_minutes:number};
+export const activeServices=async()=> (await query('SELECT id,name,duration_minutes AS "durationMinutes" FROM services WHERE active=true ORDER BY name')).rows;
+export async function findService(id:string){return (await query<Service>('SELECT id,name,duration_minutes FROM services WHERE id=$1 AND active=true',[id])).rows[0]??null;}
+export async function overlaps(start:Date,end:Date){return ((await query('SELECT 1 FROM appointments WHERE status=\'confirmed\' AND tstzrange(starts_at,ends_at,\'[)\') && tstzrange($1::timestamptz,$2::timestamptz,\'[)\') LIMIT 1',[start.toISOString(),end.toISOString()])).rowCount??0)>0;}
+export async function insertAppointment(userId:string,serviceId:string,start:Date,end:Date){return (await query('INSERT INTO appointments(user_id,service_id,starts_at,ends_at) VALUES($1,$2,$3,$4) RETURNING id,service_id AS "serviceId",starts_at AS "startsAt",ends_at AS "endsAt",status',[userId,serviceId,start.toISOString(),end.toISOString()])).rows[0];}
+export async function listForUser(userId:string){return (await query('SELECT a.id,a.service_id AS "serviceId",s.name AS "serviceName",a.starts_at AS "startsAt",a.ends_at AS "endsAt",a.status FROM appointments a JOIN services s ON s.id=a.service_id WHERE a.user_id=$1 ORDER BY a.starts_at DESC',[userId])).rows;}
+export async function cancelForUser(userId:string,id:string){return (await query("UPDATE appointments SET status='cancelled' WHERE id=$1 AND user_id=$2 AND status='confirmed' RETURNING id,status",[id,userId])).rows[0]??null;}
