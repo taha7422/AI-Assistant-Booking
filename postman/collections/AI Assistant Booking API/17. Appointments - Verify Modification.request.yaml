@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Appointment list confirms modification state', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      const active = json.data.filter((item) => item.status === 'booked');
+      const target = active.filter((item) => item.id === pm.environment.get('chatAppointmentId'));
+      pm.test('Exactly one row has the original appointment ID', () => pm.expect(target).to.have.length(1));
+      pm.test('Unavailable attempt left the target at its modified time', () => pm.expect(target[0].startsAt).to.eql(pm.environment.get('modifiedStartsAt')));
+      pm.test('The owner still has exactly one active appointment', () => pm.expect(active).to.have.length(1));
+    language: text/javascript
+order: 17000
+name: Appointments - Verify Modification

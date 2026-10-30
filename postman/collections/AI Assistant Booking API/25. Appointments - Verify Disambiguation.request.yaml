@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments"
+method: GET
+headers:
+  Authorization: Bearer {{token2}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Both same-day appointments remain active', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      const active = json.data.filter((item) => item.status === 'booked');
+      const target = active.filter((item) => item.id === pm.environment.get('multiAppointmentId'));
+      pm.test('Selected appointment has exactly one persisted row', () => pm.expect(target).to.have.length(1));
+      pm.test('Update did not create a duplicate', () => pm.expect(active).to.have.length(2));
+      pm.test('Selected appointment moved from its original slot', () => pm.expect(target[0].startsAt).not.to.eql(pm.environment.get('slotTime')));
+    language: text/javascript
+order: 25000
+name: Appointments - Verify Disambiguation

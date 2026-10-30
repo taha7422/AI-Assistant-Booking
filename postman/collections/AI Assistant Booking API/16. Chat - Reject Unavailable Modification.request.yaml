@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "Change my appointment to 3 PM."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Unavailable modification is handled safely', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('No false success confirmation', () => pm.expect(json.data.action).to.eql('ask_more'));
+      pm.test('Assistant explains the slot conflict', () => pm.expect(json.data.message.content.toLowerCase()).to.include('unavailable'));
+    language: text/javascript
+order: 16000
+name: Chat - Reject Unavailable Modification

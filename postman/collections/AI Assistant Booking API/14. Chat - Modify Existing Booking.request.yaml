@@ -1,0 +1,25 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "Change my appointment to 4 PM."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Modification request succeeds', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Existing appointment was updated', () => pm.expect(json.data.action).to.eql('modified'));
+      pm.test('Same appointment ID was returned', () => pm.expect(json.data.appointment.id).to.eql(pm.environment.get('chatAppointmentId')));
+      pm.test('Appointment time changed', () => pm.expect(json.data.appointment.startsAt).not.to.eql(pm.environment.get('originalStartsAt')));
+      pm.environment.set('modifiedStartsAt', json.data.appointment.startsAt);
+      pm.collectionVariables.set('modifiedStartsAt', json.data.appointment.startsAt);
+    language: text/javascript
+order: 14000
+name: Chat - Modify Existing Booking

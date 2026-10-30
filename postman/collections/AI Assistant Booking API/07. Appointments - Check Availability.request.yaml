@@ -1,0 +1,46 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments/availability?serviceId={{serviceId}}&date={{testDate}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+queryParams:
+  serviceId: "{{serviceId}}"
+  date: "{{testDate}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Use built-in Date methods: Newman sandbox may not expose Intl.
+      // A UTC Tuesday–Thursday remains a weekday in local zones up to one day from UTC.
+      const now = new Date();
+      let testDate = null;
+      for (let offset = 2; offset < 15 && !testDate; offset += 1) {
+          const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset, 12));
+          const weekday = candidate.getUTCDay();
+          if (weekday >= 2 && weekday <= 4) {
+              const year = candidate.getUTCFullYear();
+              const month = String(candidate.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(candidate.getUTCDate()).padStart(2, '0');
+              testDate = `${year}-${month}-${day}`;
+          }
+      }
+      if (!testDate) throw new Error('Could not create a future business weekday for availability testing.');
+      pm.environment.set('testDate', testDate);
+      pm.collectionVariables.set('testDate', testDate);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      const slots = json.data?.slots || [];
+      pm.test('Availability returns at least one slot', () => pm.expect(slots.length).to.be.above(0));
+      if (slots.length > 0) {
+          pm.environment.set('slotTime', slots[0]);
+          pm.collectionVariables.set('slotTime', slots[0]);
+      }
+      pm.test('Two slots exist for same-day disambiguation', () => pm.expect(slots.length).to.be.at.least(2));
+      if (slots.length > 1) {
+          pm.environment.set('slotTime2', slots[1]);
+          pm.collectionVariables.set('slotTime2', slots[1]);
+      }
+    language: text/javascript
+order: 7000

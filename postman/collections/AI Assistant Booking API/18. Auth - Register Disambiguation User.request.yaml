@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Disambiguation Tester",
+      "email": "{{multiUserEmail}}",
+      "password": "{{testPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Second isolated customer registers', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.environment.set('token2', json.data.token);
+      pm.collectionVariables.set('token2', json.data.token);
+    language: text/javascript
+order: 14500
+name: Auth - Register Disambiguation User

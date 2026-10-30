@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token2}}
+body:
+  type: text
+  content: |-
+    {
+      "serviceId": "{{serviceId}}",
+      "startsAt": "{{originalStartsAt}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Released slot can be booked by the test user', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.environment.set('occupyingAppointmentId', json.data.id);
+      pm.collectionVariables.set('occupyingAppointmentId', json.data.id);
+    language: text/javascript
+order: 15000
+name: Appointments - Occupy Original Slot

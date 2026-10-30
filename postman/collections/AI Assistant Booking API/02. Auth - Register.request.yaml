@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Postman Tester",
+      "email": "{{userEmail}}",
+      "password": "{{testPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201 Created', function () {
+          pm.response.to.have.status(201);
+      });
+      const json = pm.response.json();
+      if (json.data && json.data.token) {
+          pm.environment.set('token', json.data.token);
+          pm.collectionVariables.set('token', json.data.token);
+          pm.test('Token received', () => pm.expect(json.data.token).to.be.a('string'));
+      }
+    language: text/javascript
+order: 2000

@@ -1,0 +1,14 @@
+$kind: http-request
+name: 04. Auth - Current User Profile (/me)
+url: "{{baseUrl}}/api/auth/me"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('User ID returned', () => pm.expect(json.data.user.id).to.be.a('string'));
+    language: text/javascript
+order: 4000

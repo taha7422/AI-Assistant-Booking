@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments/{{occupyingAppointmentId}}/cancel"
+method: PATCH
+headers:
+  Authorization: Bearer {{token2}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Test fixture releases the occupied slot', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Occupying appointment is cancelled', () => pm.expect(json.data.status).to.eql('cancelled'));
+    language: text/javascript
+order: 17500
+name: Appointments - Release Unavailable Slot

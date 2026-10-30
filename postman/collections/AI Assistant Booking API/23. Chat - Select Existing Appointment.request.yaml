@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId2}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token2}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "{{testDate}} at 09:00"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Appointment selection is accepted', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Selection prompts for a distinct new time', () => pm.expect(json.data.action).to.eql('ask_more'));
+      pm.test('Selection is not mistaken for the new time', () => pm.expect(json.data.message.content.toLowerCase()).to.include('new time'));
+    language: text/javascript
+order: 23000
+name: Chat - Select Existing Appointment

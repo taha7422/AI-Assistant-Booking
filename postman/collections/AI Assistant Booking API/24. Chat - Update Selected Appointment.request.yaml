@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId2}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token2}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "2 PM"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Selected appointment is changed', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Selected appointment ID is preserved', () => pm.expect(json.data.appointment.id).to.eql(pm.environment.get('multiAppointmentId')));
+      pm.test('Modification is confirmed after update', () => pm.expect(json.data.action).to.eql('modified'));
+    language: text/javascript
+order: 24000
+name: Chat - Update Selected Appointment

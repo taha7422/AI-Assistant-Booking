@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "Yes, confirm booking"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Chat confirmation succeeds', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Booking persisted with an ID', () => pm.expect(json.data.appointment.id).to.be.a('string'));
+      pm.test('Chat reports a completed booking', () => pm.expect(json.data.action).to.eql('booked'));
+      pm.environment.set('chatAppointmentId', json.data.appointment.id);
+      pm.collectionVariables.set('chatAppointmentId', json.data.appointment.id);
+      pm.environment.set('originalStartsAt', json.data.appointment.startsAt);
+      pm.collectionVariables.set('originalStartsAt', json.data.appointment.startsAt);
+    language: text/javascript
+order: 13000
+name: Chat - Confirm Booking

@@ -1,0 +1,9 @@
+$kind: collection
+description: Complete test suite for AI Assistant Booking backend API (Authentication, Appointments, Availability, Chat & AI Fallback)
+variables:
+  baseUrl: http://127.0.0.1:4000
+  token: ""
+  serviceId: ""
+  slotTime: ""
+  appointmentId: ""
+  sessionId: ""

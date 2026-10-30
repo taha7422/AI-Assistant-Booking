@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "I need a {{serviceName}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200 OK', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Assistant returned a message', () => pm.expect(json.data.message).to.be.an('object'));
+      pm.test('Supported assistant provider returned metadata', () => pm.expect(['groq', 'mock']).to.include(json.data.message.metadata.provider));
+      pm.test('Assistant asks for the missing date', () => pm.expect(json.data.action).to.eql('ask_more'));
+      pm.test('The assistant response requests a date', () => pm.expect(json.data.message.content.toLowerCase()).to.match(/date|weekday/));
+    language: text/javascript
+order: 12000

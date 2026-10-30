@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "On {{testDate}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Date follow-up is accepted', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Assistant asks for the missing time', () => pm.expect(json.data.action).to.eql('ask_more'));
+      pm.test('The assistant response requests a time', () => pm.expect(json.data.message.content.toLowerCase()).to.include('time'));
+    language: text/javascript
+order: 12100
+name: Chat - Provide Booking Date

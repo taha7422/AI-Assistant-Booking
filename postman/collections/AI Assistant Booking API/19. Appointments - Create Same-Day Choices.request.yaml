@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token2}}
+body:
+  type: text
+  content: |-
+    {
+      "serviceId": "{{serviceId}}",
+      "startsAt": "{{slotTime}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('First appointment is created', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.environment.set('multiAppointmentId', json.data.id);
+      pm.collectionVariables.set('multiAppointmentId', json.data.id);
+    language: text/javascript
+order: 19000
+name: Appointments - Create First Same-Day Choice

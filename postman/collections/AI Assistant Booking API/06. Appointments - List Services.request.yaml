@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments/services"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('At least 1 active service', () => pm.expect(json.data.length).to.be.above(0));
+      if (json.data && json.data.length > 0) {
+          pm.environment.set('serviceId', json.data[0].id);
+          pm.collectionVariables.set('serviceId', json.data[0].id);
+          pm.environment.set('serviceName', json.data[0].name);
+          pm.collectionVariables.set('serviceName', json.data[0].name);
+      }
+    language: text/javascript
+order: 6000

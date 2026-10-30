@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Appointment status is cancelled', () => pm.expect(json.data.status).to.eql('cancelled'));
+    language: text/javascript
+order: 10000

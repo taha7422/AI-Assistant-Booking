@@ -1,0 +1,1320 @@
+{
+  "info": {
+    "_postman_id": "b3e0c7a4-1234-4567-89ab-cdef01234567",
+    "name": "AI Assistant Booking API",
+    "description": "Complete test suite for AI Assistant Booking backend API (Authentication, Appointments, Availability, Chat & AI Fallback)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:4000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "slotTime",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appointmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Database is connected', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('ok');",
+              "    pm.expect(json.database).to.eql('connected');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "02. Auth - Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "if (json.data && json.data.token) {",
+              "    pm.environment.set('token', json.data.token);",
+              "    pm.collectionVariables.set('token', json.data.token);",
+              "    pm.test('Token received', () => pm.expect(json.data.token).to.be.a('string'));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Tester\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "03. Auth - Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "if (json.data && json.data.token) {",
+              "    pm.environment.set('token', json.data.token);",
+              "    pm.collectionVariables.set('token', json.data.token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "04. Auth - Current User Profile (/me)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('User ID returned', () => pm.expect(json.data.user.id).to.be.a('string'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "me"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "05. Business Settings",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Operating hours returned', () => pm.expect(json.data.operatingHours.opensAt).to.eql('09:00'));",
+              "pm.test('Business timezone returned', () => pm.expect(json.data.timeZone).to.be.a('string'));",
+              "pm.environment.set('timeZone', json.data.timeZone);",
+              "pm.collectionVariables.set('timeZone', json.data.timeZone);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/business",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "business"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "06. Appointments - List Services",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('At least 1 active service', () => pm.expect(json.data.length).to.be.above(0));",
+              "if (json.data && json.data.length > 0) {",
+              "    pm.environment.set('serviceId', json.data[0].id);",
+              "    pm.collectionVariables.set('serviceId', json.data[0].id);",
+              "    pm.environment.set('serviceName', json.data[0].name);",
+              "    pm.collectionVariables.set('serviceName', json.data[0].name);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments/services",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments",
+            "services"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "07. Appointments - Check Availability",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Use built-in Date methods: Newman sandbox may not expose Intl.",
+              "// A UTC Tuesday–Thursday remains a weekday in local zones up to one day from UTC.",
+              "const now = new Date();",
+              "let testDate = null;",
+              "for (let offset = 2; offset < 15 && !testDate; offset += 1) {",
+              "    const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset, 12));",
+              "    const weekday = candidate.getUTCDay();",
+              "    if (weekday >= 2 && weekday <= 4) {",
+              "        const year = candidate.getUTCFullYear();",
+              "        const month = String(candidate.getUTCMonth() + 1).padStart(2, '0');",
+              "        const day = String(candidate.getUTCDate()).padStart(2, '0');",
+              "        testDate = `${year}-${month}-${day}`;",
+              "    }",
+              "}",
+              "if (!testDate) throw new Error('Could not create a future business weekday for availability testing.');",
+              "pm.environment.set('testDate', testDate);",
+              "pm.collectionVariables.set('testDate', testDate);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "const slots = json.data?.slots || [];",
+              "pm.test('Availability returns at least one slot', () => pm.expect(slots.length).to.be.above(0));",
+              "if (slots.length > 0) {",
+              "    pm.environment.set('slotTime', slots[0]);",
+              "    pm.collectionVariables.set('slotTime', slots[0]);",
+              "}",
+              "pm.test('Two slots exist for same-day disambiguation', () => pm.expect(slots.length).to.be.at.least(2));",
+              "if (slots.length > 1) {",
+              "    pm.environment.set('slotTime2', slots[1]);",
+              "    pm.collectionVariables.set('slotTime2', slots[1]);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments/availability?serviceId={{serviceId}}&date={{testDate}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments",
+            "availability"
+          ],
+          "query": [
+            {
+              "key": "serviceId",
+              "value": "{{serviceId}}"
+            },
+            {
+              "key": "date",
+              "value": "{{testDate}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08. Appointments - Book Slot (Form Mode)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201 Created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "    pm.environment.set('appointmentId', json.data.id);",
+              "    pm.collectionVariables.set('appointmentId', json.data.id);",
+              "    pm.test('Status is booked', () => pm.expect(json.data.status).to.eql('booked'));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"startsAt\": \"{{slotTime}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "09. Appointments - List User Bookings",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('List contains appointments', () => pm.expect(json.data.length).to.be.above(0));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "10. Appointments - Cancel Booking",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Appointment status is cancelled', () => pm.expect(json.data.status).to.eql('cancelled'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments",
+            "{{appointmentId}}",
+            "cancel"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "11. Chat - Start Session",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201 Created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "    pm.environment.set('sessionId', json.data.id);",
+              "    pm.collectionVariables.set('sessionId', json.data.id);",
+              "    pm.test('Assistant initial greeting sent', () => pm.expect(json.data.messages.length).to.be.above(0));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Postman Chat Session\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "12. Chat - Send Booking Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Assistant returned a message', () => pm.expect(json.data.message).to.be.an('object'));",
+              "pm.test('Supported assistant provider returned metadata', () => pm.expect(['groq', 'mock']).to.include(json.data.message.metadata.provider));",
+              "pm.test('Assistant asks for the missing date', () => pm.expect(json.data.action).to.eql('ask_more'));",
+              "pm.test('The assistant response requests a date', () => pm.expect(json.data.message.content.toLowerCase()).to.match(/date|weekday/));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"I need a {{serviceName}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Provide Booking Date",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Date follow-up is accepted', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Assistant asks for the missing time', () => pm.expect(json.data.action).to.eql('ask_more'));",
+              "pm.test('The assistant response requests a time', () => pm.expect(json.data.message.content.toLowerCase()).to.include('time'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"On {{testDate}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Provide Booking Time",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Time follow-up is accepted', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Availability is checked and confirmation is requested', () => pm.expect(json.data.action).to.eql('suggest_slots'));",
+              "pm.test('Confirmation quick reply is present', () => pm.expect(json.data.quickReplies.join(' ')).to.match(/confirm booking/i));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"At 15:00\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Confirm Booking",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Chat confirmation succeeds', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Booking persisted with an ID', () => pm.expect(json.data.appointment.id).to.be.a('string'));",
+              "pm.test('Chat reports a completed booking', () => pm.expect(json.data.action).to.eql('booked'));",
+              "pm.environment.set('chatAppointmentId', json.data.appointment.id);",
+              "pm.collectionVariables.set('chatAppointmentId', json.data.appointment.id);",
+              "pm.environment.set('originalStartsAt', json.data.appointment.startsAt);",
+              "pm.collectionVariables.set('originalStartsAt', json.data.appointment.startsAt);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Yes, confirm booking\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Modify Existing Booking",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Modification request succeeds', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Existing appointment was updated', () => pm.expect(json.data.action).to.eql('modified'));",
+              "pm.test('Same appointment ID was returned', () => pm.expect(json.data.appointment.id).to.eql(pm.environment.get('chatAppointmentId')));",
+              "pm.test('Appointment time changed', () => pm.expect(json.data.appointment.startsAt).not.to.eql(pm.environment.get('originalStartsAt')));",
+              "pm.environment.set('modifiedStartsAt', json.data.appointment.startsAt);",
+              "pm.collectionVariables.set('modifiedStartsAt', json.data.appointment.startsAt);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Change my appointment to 4 PM.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Auth - Register Disambiguation User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Second isolated customer registers', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('token2', json.data.token);",
+              "pm.collectionVariables.set('token2', json.data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Disambiguation Tester\",\n  \"email\": \"{{multiUserEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Appointments - Occupy Original Slot",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Released slot can be booked by the test user', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('occupyingAppointmentId', json.data.id);",
+              "pm.collectionVariables.set('occupyingAppointmentId', json.data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"startsAt\": \"{{originalStartsAt}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Reject Unavailable Modification",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Unavailable modification is handled safely', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('No false success confirmation', () => pm.expect(json.data.action).to.eql('ask_more'));",
+              "pm.test('Assistant explains the slot conflict', () => pm.expect(json.data.message.content.toLowerCase()).to.include('unavailable'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Change my appointment to 3 PM.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Appointments - Verify Modification",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Appointment list confirms modification state', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "const active = json.data.filter((item) => item.status === 'booked');",
+              "const target = active.filter((item) => item.id === pm.environment.get('chatAppointmentId'));",
+              "pm.test('Exactly one row has the original appointment ID', () => pm.expect(target).to.have.length(1));",
+              "pm.test('Unavailable attempt left the target at its modified time', () => pm.expect(target[0].startsAt).to.eql(pm.environment.get('modifiedStartsAt')));",
+              "pm.test('The owner still has exactly one active appointment', () => pm.expect(active).to.have.length(1));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Appointments - Release Unavailable Slot",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Test fixture releases the occupied slot', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Occupying appointment is cancelled', () => pm.expect(json.data.status).to.eql('cancelled'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments/{{occupyingAppointmentId}}/cancel",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments",
+            "{{occupyingAppointmentId}}",
+            "cancel"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Appointments - Create First Same-Day Choice",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('First appointment is created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('multiAppointmentId', json.data.id);",
+              "pm.collectionVariables.set('multiAppointmentId', json.data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"startsAt\": \"{{slotTime}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Appointments - Create Second Same-Day Choice",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Second same-day appointment is created', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"startsAt\": \"{{slotTime2}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Start Disambiguation Session",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Disambiguation chat session starts', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('sessionId2', json.data.id);",
+              "pm.collectionVariables.set('sessionId2', json.data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Disambiguation Test\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Ask Which Appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Ambiguous modification is safely clarified', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Assistant asks which appointment', () => pm.expect(json.data.action).to.eql('ask_more'));",
+              "pm.test('Assistant mentions multiple appointments', () => pm.expect(json.data.message.content.toLowerCase()).to.include('multiple appointments'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Change my appointment to 4 PM.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId2}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId2}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Select Existing Appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Appointment selection is accepted', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Selection prompts for a distinct new time', () => pm.expect(json.data.action).to.eql('ask_more'));",
+              "pm.test('Selection is not mistaken for the new time', () => pm.expect(json.data.message.content.toLowerCase()).to.include('new time'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"{{testDate}} at 09:00\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId2}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId2}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Chat - Update Selected Appointment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Selected appointment is changed', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Selected appointment ID is preserved', () => pm.expect(json.data.appointment.id).to.eql(pm.environment.get('multiAppointmentId')));",
+              "pm.test('Modification is confirmed after update', () => pm.expect(json.data.action).to.eql('modified'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"2 PM\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/sessions/{{sessionId2}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "sessions",
+            "{{sessionId2}}",
+            "messages"
+          ],
+          "query": []
+        }
+      }
+    },
+    {
+      "name": "Appointments - Verify Disambiguation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Both same-day appointments remain active', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "const active = json.data.filter((item) => item.status === 'booked');",
+              "const target = active.filter((item) => item.id === pm.environment.get('multiAppointmentId'));",
+              "pm.test('Selected appointment has exactly one persisted row', () => pm.expect(target).to.have.length(1));",
+              "pm.test('Update did not create a duplicate', () => pm.expect(active).to.have.length(2));",
+              "pm.test('Selected appointment moved from its original slot', () => pm.expect(target[0].startsAt).not.to.eql(pm.environment.get('slotTime')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ],
+          "query": []
+        }
+      }
+    }
+  ]
+}

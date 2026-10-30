@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/appointments"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token2}}
+body:
+  type: text
+  content: |-
+    {
+      "serviceId": "{{serviceId}}",
+      "startsAt": "{{slotTime2}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Second same-day appointment is created', () => pm.response.to.have.status(201));
+    language: text/javascript
+order: 20000
+name: Appointments - Create Second Same-Day Choice

@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions/{{sessionId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "content": "At 15:00"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Time follow-up is accepted', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Availability is checked and confirmation is requested', () => pm.expect(json.data.action).to.eql('suggest_slots'));
+      pm.test('Confirmation quick reply is present', () => pm.expect(json.data.quickReplies.join(' ')).to.match(/confirm booking/i));
+    language: text/javascript
+order: 12200
+name: Chat - Provide Booking Time

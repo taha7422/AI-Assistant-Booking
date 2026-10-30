@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/chat/sessions"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token2}}
+body:
+  type: text
+  content: |-
+    {
+      "title": "Disambiguation Test"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Disambiguation chat session starts', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.environment.set('sessionId2', json.data.id);
+      pm.collectionVariables.set('sessionId2', json.data.id);
+    language: text/javascript
+order: 21000
+name: Chat - Start Disambiguation Session

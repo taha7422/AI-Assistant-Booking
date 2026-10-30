@@ -2,16 +2,29 @@
   "name": "ai-assistant-booking",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["apps/api", "apps/web"],
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "npm --workspace apps/api run dev",
     "dev:web": "npm --workspace apps/web run dev",
     "build": "npm --workspace apps/api run build && npm --workspace apps/web run build",
     "test": "npm --workspace apps/api test",
+    "test:integration": "node scripts/run-postman.mjs --integration",
+    "test:postman": "node scripts/run-postman.mjs",
+    "postman:export": "node scripts/run-postman.mjs --export-only",
+    "test:all": "npm test && npm run test:postman && npm run test:integration",
     "db:migrate": "npm --workspace apps/api run db:migrate",
     "db:seed": "npm --workspace apps/api run db:seed"
   },
-  "devDependencies": {"concurrently": "^9.2.1"},
-  "overrides": {"postcss": "^8.5.32"}
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "newman": "^6.2.3",
+    "yaml": "^2.9.1"
+  },
+  "overrides": {
+    "postcss": "^8.5.32"
+  }
 }

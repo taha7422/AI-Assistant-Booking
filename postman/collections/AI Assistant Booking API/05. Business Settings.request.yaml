@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/api/business"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Operating hours returned', () => pm.expect(json.data.operatingHours.opensAt).to.eql('09:00'));
+      pm.test('Business timezone returned', () => pm.expect(json.data.timeZone).to.be.a('string'));
+      pm.environment.set('timeZone', json.data.timeZone);
+      pm.collectionVariables.set('timeZone', json.data.timeZone);
+    language: text/javascript
+order: 5000

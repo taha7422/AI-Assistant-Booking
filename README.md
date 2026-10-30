@@ -1,85 +1,142 @@
 # AI Assistant Booking
 
-A full-stack appointment scheduler with protected user accounts, an AI-assisted intake chat, a deterministic manual booking flow, and PostgreSQL-backed bookings. The attached `Assessment_Execution_Plan.docx` was later located in Downloads and inspected, including its tables and six embedded diagrams/mockups. The separate official assessment brief has not been located. The current code began before the plan was found and is only a partial implementation; plan-specific differences are recorded in `docs/decisions.md`.
+A SaaS-style appointment-booking prototype with account-based access, a conversational booking assistant, PostgreSQL persistence, and a manual booking fallback. The assistant uses Groq to extract booking details; application code remains responsible for availability, confirmation, validation, and database writes.
 
-## Architecture
+The project demonstrates a complete full-stack workflow for a technical assessment, with emphasis on the core booking experience.
 
-- `apps/web`: Next.js App Router, React, TypeScript, Tailwind CSS. One responsive screen provides sign-up/sign-in, chat, manual availability lookup, booking list, and cancellation.
-- `apps/api`: Express 5 and TypeScript. Zod validates HTTP and AI inputs/outputs; bcrypt hashes passwords; JWT protects user resources; Helmet, CORS, rate limiting, Pino HTTP logging, and centralized errors are enabled.
-- `db/schema.sql`, `db/seed.sql`: PostgreSQL schema and starter service rows. A GiST exclusion constraint on confirmed appointment time ranges prevents overlapping bookings at the database layer. An application check provides a clearer early conflict response.
-- The AI extracts service/date/time and asks questions. It has no booking write tools. A user must use the appointment endpoint/form to submit a booking; the server then checks service, operating hours, future time, and collisions.
+## Features
 
-The API response convention is `{ "data": ... }` for successful operations and `{ "error": "..." }` for failures. The frontend currently keeps the JWT in local storage for this assessment prototype; a production deployment should use secure, HttpOnly, SameSite cookies and a CSRF strategy.
+- Register, sign in, and retrieve the authenticated profile.
+- Browse services, check weekday availability, book a time manually, list appointments, and cancel a booking.
+- Chat across multiple turns to identify the service, date, and time; the assistant checks availability and requests explicit confirmation before creating an appointment.
+- Modify an existing appointment through chat. The backend resolves the authenticated user's booking, asks which one when the request is ambiguous, checks the new slot, and updates the existing row.
+- Persist chat sessions, messages, pending booking state, and AI audit metadata in PostgreSQL.
+- Use a deterministic mock intent extractor for offline and isolated tests when Groq is unavailable or disabled.
+- Responsive sign-in, chat, manual booking, and appointment screens, including narrow-screen layouts.
 
-## Provisional assumptions and decisions
+## Technology
 
-- Services seeded: Consultation (30 minutes), Follow-up (20 minutes), Extended session (60 minutes). These are sample values; the plan's examples include Consultation, Check-up, and Follow-up.
-- Hours: Monday through Friday, 09:00–17:00 UTC, with half-hour starts. The plan calls for a configured IANA business time zone stored on a business record. UTC is a temporary simplification, not full compliance with that requirement.
-- AI model is configurable via `MISTRAL_MODEL`, defaulting to `mistral-medium-3.5`. The plan specifies `mistral-small-latest`; the default here is a provisional provider-documented alternative and has not been tested with an account key. Change it after confirming the account-enabled model ID.
-- The API uses the official `@mistralai/mistralai` TypeScript SDK and chat completions. No key means a deterministic mock assistant is used for development. Provider or output-validation errors return a manual-booking fallback.
-- Appointment statuses are `confirmed` and `cancelled`; cancellation updates the record, preserving audit history.
+| Area | Implementation |
+| --- | --- |
+| Frontend | Next.js App Router, React, TypeScript, Tailwind CSS dependency, project CSS styles |
+| API | Node.js, Express 5, TypeScript |
+| Database | PostgreSQL, parameterized SQL via `pg`, versioned SQL migrations |
+| AI | Groq chat completions API with JSON structured output; deterministic mock provider for tests |
+| Validation | Zod |
+| Authentication | bcryptjs password hashing and signed JWT bearer tokens |
+| Logging and HTTP security | Pino, Helmet, CORS allow-list, Express rate limits |
+| Testing | Node test runner, `tsx`, Newman/Postman, isolated local PostgreSQL integration harness |
 
-## Local setup
+The app is organized as a small monorepo. See [Technical overview](docs/technical-overview.md) for the architecture diagram, API map, data model, workflow details, test evidence, assessment coverage, and limitations.
 
-Requirements: Node.js 20.9+ (the installed machine reported Node v26.13.0), npm, and PostgreSQL. This machine reports PostgreSQL 18.6 and a running Windows service, but the execution environment denied a TCP connection to localhost:5432. The Git repository was initialized locally. PowerShell blocks the `npm` script shim under the current execution policy, so run `npm.cmd` commands.
+## Project layout
 
-1. Create a database named `ai_assistant_booking` and a PostgreSQL role with permissions to create the `pgcrypto` and `btree_gist` extensions (or have an administrator install them).
-2. Copy the root `.env.example` to root `.env` and set `DATABASE_URL` and a random `JWT_SECRET` of at least 32 characters. Keep `MISTRAL_API_KEY` empty for mock mode, or enter it directly in that local environment file; never paste it into chat or commit it. `MISTRAL_MODEL` is configurable.
-3. From the repository root, run `npm.cmd install`, then `npm.cmd run db:migrate` and `npm.cmd run db:seed`.
-4. Run `npm.cmd run dev`. The API is at `http://127.0.0.1:4000`; Next.js is at `http://127.0.0.1:3000`.
-5. Check `http://127.0.0.1:4000/health` after PostgreSQL access is configured.
+```text
+apps/
+  api/                 Express API, middleware, routes, services, repositories, unit tests
+  web/                 Next.js frontend
+db/
+  migrations/          Ordered PostgreSQL migrations
+  schema.sql           Current reference schema
+  seed.sql             Default business and sample services
+docs/                  API, setup, Groq, architecture decisions, technical overview
+postman/               YAML source collection/environment and generated exports
+scripts/               Isolated Postman and API integration runners
+```
 
-The migration runner reads the root SQL files; the schema may also be applied directly with `psql -d ai_assistant_booking -f db/schema.sql` followed by `-f db/seed.sql`.
+## Requirements
+
+- Node.js 20 or newer and npm.
+- PostgreSQL 15 or newer with `pgcrypto` and `btree_gist` available.
+- A Groq API key for live AI extraction. Local development and automated tests can use mock mode.
+
+## Run locally
+
+From the repository root:
+
+```powershell
+npm install
+Copy-Item .env.example .env
+```
+
+Edit `.env` locally with your own PostgreSQL URL, a private JWT secret of at least 32 characters, and provider settings. Do not put credentials in Git or documentation. Then initialize and run the app:
+
+```powershell
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+The frontend runs at `http://127.0.0.1:3000`; the API runs at `http://127.0.0.1:4000`. The API health endpoint is `http://127.0.0.1:4000/health`. For an offline local run, set `AI_PROVIDER=mock` and leave `GROQ_API_KEY` empty. See [local PostgreSQL setup](docs/local-postgres-setup.md) for database and disposable-test-database setup.
 
 ## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `PORT` | API listen port (default 4000) |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | JWT signing secret; use a unique random value of at least 32 characters |
-| `MISTRAL_API_KEY` | Optional server-only Mistral API key; omitted means mock mode |
-| `MISTRAL_MODEL` | Model identifier (default `mistral-medium-3.5`) |
-| `FRONTEND_ORIGIN` | Exact allowed web origin (default `http://127.0.0.1:3000`) |
-| `NODE_ENV` | `development`, `test`, or `production` |
-| `NEXT_PUBLIC_API_URL` | Optional frontend API base URL (default `http://127.0.0.1:4000/api`) |
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | API | PostgreSQL connection URL for the application database. |
+| `JWT_SECRET` | API | Private signing secret, at least 32 characters; production rejects known placeholder/default values. |
+| `AI_PROVIDER` | API | `groq` for live provider calls; `mock` for deterministic local use and tests. Production requires Groq. |
+| `GROQ_API_KEY` | API | Server-side secret. Never expose it through a `NEXT_PUBLIC_*` variable. |
+| `GROQ_MODEL` | API | Groq model identifier; defaults to `openai/gpt-oss-120b`. |
+| `PORT` | API | API listen port; defaults to `4000`. |
+| `TRUST_PROXY_HOPS` | API | Number of trusted ingress proxies; defaults to `0`. |
+| `FRONTEND_ORIGIN` | API | Exact allowed frontend origin for CORS. |
+| `NODE_ENV` | API | `development`, `test`, or `production`. |
+| `NEXT_PUBLIC_API_URL` | Frontend build | Public API base URL ending in `/api`. Local loopback hosts default to port 4000. |
+| `TEST_DATABASE_URL` | Integration/Postman runner | Empty, disposable loopback PostgreSQL database whose name ends in `_test`. Never point this at an application or customer database. |
 
-Do not expose DB credentials, JWT signing key, or the Mistral key to `NEXT_PUBLIC_*` values. Production deployment must reject development secrets and enforce HTTPS, restricted CORS, secrets-manager configuration, backups, and database connection controls.
+The root and API `.env.example` files are examples with placeholders, not credentials. `.env` is ignored by Git. Keep private values out of source control.
 
-## API
+## Build and test
 
-All paths below are relative to `http://localhost:4000`.
+```powershell
+npm test
+npm run build
+```
 
-- `GET /health` — database-backed health check.
-- `POST /api/auth/register` — `{ name, email, password }`, password length 10–128 characters and at most 72 UTF-8 bytes (bcrypt limit). Returns user and 7-day JWT.
-- `POST /api/auth/login` — `{ email, password }`. Returns user and JWT.
-- `GET /api/appointments/services` — active service list; requires `Authorization: Bearer <token>`.
-- `GET /api/appointments/availability?serviceId=<uuid>&date=YYYY-MM-DD` — available 30-minute starts; requires auth.
-- `POST /api/appointments` — `{ serviceId, startsAt }` ISO timestamp with offset; requires auth. Returns the persisted appointment.
-- `GET /api/appointments` — current user's appointments only; requires auth.
-- `DELETE /api/appointments/:id` — cancel a confirmed appointment belonging to the current user; requires auth.
-- `POST /api/assistant/chat` — `{ messages: [{ role: "user"|"assistant", content }] }`, 1–12 entries. Returns a validated reply and non-authoritative extracted intent; requires auth.
+`npm test` runs the API's offline unit tests. `npm run build` builds the API TypeScript and the frontend for production.
 
-The API applies a global request limit and a stricter per-IP limit of 10 sign-up/sign-in requests per 15 minutes.
+The database-backed test commands require a separate, empty local PostgreSQL database ending in `_test`:
 
-## Database migrations and booking correctness
+```powershell
+$env:TEST_DATABASE_URL = 'postgresql://test_user:local_test_password@127.0.0.1:5432/ai_assistant_booking_test'
+npm run test:postman
+npm run test:integration
+```
 
-`db/schema.sql` is the current baseline schema and is safe to apply on a clean database. `db/migrations/001_initial.sql` mirrors the baseline. `npm.cmd run db:migrate` applies it, and `npm.cmd run db:seed` inserts sample services idempotently. In a production system, migrations should be versioned and tracked by an explicit migration table; the current runner is intentionally small for an empty assessment project.
+The sample URL above is illustrative only. Use a local test role and private password. The harness validates the loopback host and `_test` suffix, refuses pre-existing user/appointment rows, starts a separate mock-mode API, and cleans up test accounts. It does not use `DATABASE_URL` or call Groq. **The runner applies migrations and seed data to the designated test database**, so the test database must be disposable; never use an application or customer database. More details are in the [local database guide](docs/local-postgres-setup.md).
 
-The exclusion constraint rejects overlapping active appointments even if two requests race past the application availability check. Its current scope is global across all users because the provisional model represents one shared appointment resource. If multiple staff/providers are required, the brief must specify resources and the constraint should include a provider/resource ID.
+### Test evidence and scope
 
-## Testing
+- **Unit tests:** 20 passed, 0 failed, 0 skipped in the most recent observed unit-test run. They cover booking rules, assistant extraction (mock and stubbed Groq HTTP), explicit confirmation, recent chat-history selection, and API error formatting. They do not call a live Groq service or require PostgreSQL.
+- **Full isolated integration suite:** The project owner reports the most recent successful run as **51 passed, 0 failed**. This result was not rerun while preparing this documentation. A later local verification could not start the suite because `TEST_DATABASE_URL` was absent and PostgreSQL did not respond at `127.0.0.1:5432`.
+- **Postman suite:** The project owner reports an earlier run of **28 requests and 68 assertions** passing. This is a previously reported result, not independently rerun for this documentation; the later local attempt stopped before Newman execution because the isolated test URL was missing.
+- **Production builds:** API TypeScript build and frontend production build completed successfully in recent local verification. The combined root build encountered a Windows `EPERM` error in a Next.js generated directory once; the standalone frontend build succeeded on retry.
 
-Run `npm.cmd test` for API unit tests and `npm.cmd run build` to compile both workspaces. The database-backed booking flow still requires a successful local PostgreSQL connection. Do not treat a passing compile or unit test as proof of an end-to-end persisted booking until register → availability → create → list → cancel has been exercised against PostgreSQL.
+See [test strategy and assessment coverage](docs/technical-overview.md#testing-and-verification) for the distinction between mock-backed integration checks and real provider verification.
 
-## Deployment
+## Assessment coverage
 
-No hosting account, managed database credentials, Mistral key, or deployment connector was confirmed in this environment, and public publication requires your approval. No deployment has been attempted. A compatible deployment layout is a Next.js host, a Node.js service host for Express, and managed PostgreSQL. Configure the API's `DATABASE_URL`, `JWT_SECRET`, optional `MISTRAL_API_KEY`, `MISTRAL_MODEL`, and exact `FRONTEND_ORIGIN`; set `NEXT_PUBLIC_API_URL` to the deployed API origin plus `/api`. Keep the database private and use TLS. Deployment steps must be adapted to the actual providers/accounts and verified before any live-demo claim.
+| Assessment requirement | Status | Evidence |
+| --- | --- | --- |
+| Frontend registration, sign-in, chat, and appointment management | Implemented | `apps/web/app/page.tsx`, `apps/web/app/globals.css` |
+| Responsive layout and user feedback states | Implemented; manual device QA remains useful | `apps/web/app/globals.css`, `apps/web/app/page.tsx` |
+| REST API for authentication, business, appointments, and chat | Implemented | `apps/api/src/routes/`, `apps/api/src/index.ts` |
+| PostgreSQL schema, migrations, relationships, and sample services | Implemented | `db/schema.sql`, `db/migrations/`, `db/seed.sql` |
+| Authentication and authorization | Implemented; browser token storage is a production-hardening gap | `apps/api/src/routes/auth.ts`, `apps/api/src/middleware/auth.ts`, `apps/web/app/page.tsx` |
+| Multi-turn AI-assisted booking and manual fallback | Implemented; live-provider behavior is separately tested with stubbed HTTP | `apps/api/src/services/assistant.ts`, `apps/api/src/services/chat.ts`, `apps/web/app/page.tsx` |
+| Explicit booking confirmation and appointment modification | Implemented | `apps/api/src/services/booking-confirmation.ts`, `apps/api/src/services/chat.ts`, `apps/api/src/services/booking.ts` |
+| Availability rules and duplicate/overlap prevention | Implemented in API and PostgreSQL | `apps/api/src/services/booking-rules.ts`, `apps/api/src/services/booking.ts`, `db/schema.sql` |
+| Validation, safe errors, logging, and rate limits | Implemented; limits are process-local | `apps/api/src/middleware/`, `apps/api/src/logger.ts`, `apps/api/src/index.ts` |
+| Automated test coverage | Implemented; suite results have different evidence levels | `apps/api/src/test/`, `scripts/`, `postman/` |
+| Streaming replies, reminders, payments, admin, calendar sync, password reset | Not implemented; outside the core prototype scope | No corresponding UI or API routes. |
 
-## Known limitations
+Security and privacy follow-up includes moving tokens out of Web Storage, using a shared rate-limit store if horizontally scaled, and defining chat transcript retention and consent.
 
-The official assessment brief itself has not been located. The implementation also does not yet meet several explicit execution-plan goals: there is no `businesses` table or `business_id` scoping, business IANA time zone or daylight-saving handling, persisted chat sessions/messages, AI-call audit table/log rows, `/api/auth/me`, or plan-shaped chat-session endpoints/error codes. The AI chat gathers intent and displays a manual form, but does not yet complete a booking through the shared booking service. The current UI is a single-page blue layout rather than the plan's split-screen indigo auth and separate Chat/Appointments views. There is no provider/staff resource, email verification, password reset, refresh-token/session revocation, or automated production migration tracking. The browser keeps chat history only in memory and the JWT in local storage. PostgreSQL-backed end-to-end booking, concurrency tests, and deployment remain unverified.
+## Further documentation
 
-## Interview-ready decisions
-
-Be prepared to explain the split between conversational intent extraction and deterministic booking commands; why a database exclusion constraint is required in addition to an application pre-check; and why every appointment read/update is scoped to the authenticated user. Before submission, reconcile the missing `business_id`/tenant design, plan timezone, chat persistence and AI logs, chat-driven booking, response contract, UI tokens, and chosen Mistral model against the plan and official brief.
+- [Technical overview](docs/technical-overview.md) — architecture, workflows, security, database, testing evidence, limitations, and assessment mapping.
+- [API reference](docs/API.md) — endpoints, request rules, and errors.
+- [Local PostgreSQL setup](docs/local-postgres-setup.md) — local and isolated test database instructions.
+- [Groq integration notes](docs/groq-integration.md) — model call and failure behavior.
+- [Architecture decisions](docs/decisions.md) — key tradeoffs and design boundaries.
