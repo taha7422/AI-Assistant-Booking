@@ -9,7 +9,11 @@ type ChatMessage = { id?: string; role: 'user' | 'assistant'; content: string; m
 type Session = { id: string; title: string; lastMessage?: string | null; updatedAt: string };
 
 function getApiUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (configuredApiUrl) {
+    const normalizedApiUrl = configuredApiUrl.replace(/\/+$/, '');
+    return /\/api$/i.test(normalizedApiUrl) ? normalizedApiUrl : `${normalizedApiUrl}/api`;
+  }
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:4000/api';
   }
